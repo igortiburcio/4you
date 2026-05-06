@@ -1,8 +1,10 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import Paginator
-from django.db.models import Count
+from django.db.models import Case, Count
+from django.db.models import CharField
 from django.db.models import Q
+from django.db.models import Value, When
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
@@ -145,12 +147,40 @@ class DepartmentListCreateView(LoginRequiredMixin, GroupRequiredMixin, View):
 
     def get(self, request):
         form = DepartmentForm()
-        departments = Department.objects.all()
+        departments = Department.objects.filter(active=True)
         return render(
             request,
             self.template_name,
             {'form': form, 'departments': departments},
         )
+
+    def post(self, request):
+        form = DepartmentForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Departamento criado com sucesso.')
+            return redirect('employees:departments')
+        departments = Department.objects.filter(active=True)
+        return render(
+            request,
+            self.template_name,
+            {'form': form, 'departments': departments},
+        )
+
+
+class DepartmentDeactivateView(LoginRequiredMixin, GroupRequiredMixin, View):
+    allowed_groups = ['admin_rh']
+
+    def post(self, request, pk):
+        department = get_object_or_404(Department, pk=pk)
+        if not department.active:
+            messages.info(request, 'Departamento ja esta inativo.')
+            return redirect('employees:departments')
+
+        department.active = False
+        department.save(update_fields=['active', 'updated_at'])
+        messages.success(request, f'Departamento {department.name} foi inativado.')
+        return redirect('employees:departments')
 
 
 class EmployeeAnalyticsView(LoginRequiredMixin, GroupRequiredMixin, TemplateView):
@@ -172,7 +202,47 @@ class EmployeeAnalyticsView(LoginRequiredMixin, GroupRequiredMixin, TemplateView
             .order_by('status')
         )
 
-        salary_data = Employee.objects.order_by('name').values('name', 'salary')
+        salary_range_data = (
+            Employee.objects.annotate(
+                salary_range=Case(
+                    When(salary__lt=2000, then=Value('Ate R$ 1.999')),
+                    When(
+                        salary__gte=2000,
+                        salary__lt=3000,
+                        then=Value('R$ 2.000 a R$ 2.999'),
+                    ),
+                    When(
+                        salary__gte=3000,
+                        salary__lt=4000,
+                        then=Value('R$ 3.000 a R$ 3.999'),
+                    ),
+                    When(
+                        salary__gte=4000,
+                        salary__lt=5000,
+                        then=Value('R$ 4.000 a R$ 4.999'),
+                    ),
+                    When(
+                        salary__gte=5000,
+                        salary__lt=6500,
+                        then=Value('R$ 5.000 a R$ 6.499'),
+                    ),
+                    When(
+                        salary__gte=6500,
+                        salary__lt=8000,
+                        then=Value('R$ 6.500 a R$ 7.999'),
+                    ),
+                    When(
+                        salary__gte=8000,
+                        salary__lt=10000,
+                        then=Value('R$ 8.000 a R$ 9.999'),
+                    ),
+                    default=Value('R$ 10.000 ou mais'),
+                    output_field=CharField(),
+                )
+            )
+            .values('salary_range')
+            .annotate(total=Count('id'))
+        )
 
         status_labels_map = {
             Employee.Status.ACTIVE: 'Ativos',
@@ -183,19 +253,21 @@ class EmployeeAnalyticsView(LoginRequiredMixin, GroupRequiredMixin, TemplateView
         context['department_counts'] = [item.total for item in departments_data]
         context['status_labels'] = [status_labels_map[item['status']] for item in status_data]
         context['status_counts'] = [item['total'] for item in status_data]
-        context['salary_labels'] = [item['name'] for item in salary_data]
-        context['salary_values'] = [float(item['salary']) for item in salary_data]
+        salary_range_order = [
+            'Ate R$ 1.999',
+            'R$ 2.000 a R$ 2.999',
+            'R$ 3.000 a R$ 3.999',
+            'R$ 4.000 a R$ 4.999',
+            'R$ 5.000 a R$ 6.499',
+            'R$ 6.500 a R$ 7.999',
+            'R$ 8.000 a R$ 9.999',
+            'R$ 10.000 ou mais',
+        ]
+        salary_lookup = {
+            item['salary_range']: item['total'] for item in salary_range_data
+        }
+        context['salary_range_labels'] = salary_range_order
+        context['salary_range_counts'] = [
+            salary_lookup.get(label, 0) for label in salary_range_order
+        ]
         return context
-
-    def post(self, request):
-        form = DepartmentForm(request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Departamento criado com sucesso.')
-            return redirect('employees:departments')
-        departments = Department.objects.all()
-        return render(
-            request,
-            self.template_name,
-            {'form': form, 'departments': departments},
-        )

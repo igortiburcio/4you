@@ -26,7 +26,7 @@
 
   <section>
     <article class="bg-white rounded-xl border border-slate-200 p-5">
-      <h2 class="text-lg font-semibold mb-4">Salario por funcionario</h2>
+      <h2 class="text-lg font-semibold mb-4">Funcionarios por faixa salarial</h2>
       <div class="h-96">
         <canvas id="salaryChart"></canvas>
       </div>
@@ -37,8 +37,8 @@
   {{ department_counts|json_script:'department-counts' }}
   {{ status_labels|json_script:'status-labels' }}
   {{ status_counts|json_script:'status-counts' }}
-  {{ salary_labels|json_script:'salary-labels' }}
-  {{ salary_values|json_script:'salary-values' }}
+  {{ salary_range_labels|json_script:'salary-range-labels' }}
+  {{ salary_range_counts|json_script:'salary-range-counts' }}
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
@@ -46,8 +46,8 @@
     const departmentCounts = JSON.parse(document.getElementById('department-counts').textContent);
     const statusLabels = JSON.parse(document.getElementById('status-labels').textContent);
     const statusCounts = JSON.parse(document.getElementById('status-counts').textContent);
-    const salaryLabels = JSON.parse(document.getElementById('salary-labels').textContent);
-    const salaryValues = JSON.parse(document.getElementById('salary-values').textContent);
+    const salaryRangeLabels = JSON.parse(document.getElementById('salary-range-labels').textContent);
+    const salaryRangeCounts = JSON.parse(document.getElementById('salary-range-counts').textContent);
 
     const departmentCtx = document.getElementById('departmentChart');
     const statusCtx = document.getElementById('statusChart');
@@ -96,17 +96,14 @@
     });
 
     new Chart(salaryCtx, {
-      type: 'line',
+      type: 'bar',
       data: {
-        labels: salaryLabels,
+        labels: salaryRangeLabels,
         datasets: [{
-          label: 'Salario (R$)',
-          data: salaryValues,
-          borderColor: '#1d4ed8',
-          backgroundColor: 'rgba(29, 78, 216, 0.15)',
-          pointBackgroundColor: '#1d4ed8',
-          tension: 0.25,
-          fill: true,
+          label: 'Quantidade de funcionarios',
+          data: salaryRangeCounts,
+          backgroundColor: '#2563eb',
+          borderRadius: 8,
         }],
       },
       options: {
@@ -116,21 +113,7 @@
           y: {
             beginAtZero: true,
             ticks: {
-              callback: function(value) {
-                return 'R$ ' + Number(value).toLocaleString('pt-BR');
-              }
-            }
-          }
-        },
-        plugins: {
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                return 'R$ ' + Number(context.parsed.y).toLocaleString('pt-BR', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2
-                });
-              }
+              precision: 0,
             }
           }
         }

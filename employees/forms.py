@@ -1,6 +1,7 @@
 import re
 
 from django import forms
+from django.db.models import Q
 
 from .models import Department, Employee
 
@@ -9,6 +10,11 @@ class DepartmentForm(forms.ModelForm):
     class Meta:
         model = Department
         fields = ['name', 'description', 'active']
+        labels = {
+            'name': 'Nome',
+            'description': 'Descricao',
+            'active': 'Ativo',
+        }
 
 
 class EmployeeForm(forms.ModelForm):
@@ -26,8 +32,35 @@ class EmployeeForm(forms.ModelForm):
             'status',
         ]
         widgets = {
-            'hire_date': forms.DateInput(attrs={'type': 'date'}),
+            'hire_date': forms.DateInput(
+                format='%Y-%m-%d',
+                attrs={'type': 'date'},
+            ),
         }
+        labels = {
+            'registration': 'Matricula',
+            'name': 'Nome',
+            'cpf': 'CPF',
+            'age': 'Idade',
+            'position': 'Cargo',
+            'salary': 'Salario',
+            'hire_date': 'Data de admissao',
+            'department': 'Departamento',
+            'status': 'Status',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['hire_date'].input_formats = ['%Y-%m-%d', '%d/%m/%Y']
+        active_departments = Department.objects.filter(active=True)
+
+        if self.instance and self.instance.pk and self.instance.department_id:
+            self.fields['department'].queryset = Department.objects.filter(
+                Q(active=True) | Q(pk=self.instance.department_id)
+            ).order_by('name')
+            return
+
+        self.fields['department'].queryset = active_departments.order_by('name')
 
     def clean_cpf(self):
         cpf = re.sub(r'\D', '', self.cleaned_data['cpf'])

@@ -5,6 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from .models import Department, Employee
+from .forms import EmployeeForm
 
 
 class EmployeeFlowsTests(TestCase):
@@ -96,3 +97,66 @@ class EmployeeFlowsTests(TestCase):
         self.client.login(username='manager', password='12345678')
         response = self.client.get(reverse('employees:analytics'))
         self.assertEqual(response.status_code, 200)
+
+    def test_admin_can_create_department(self):
+        self.client.login(username='admin', password='12345678')
+        response = self.client.post(
+            reverse('employees:departments'),
+            {
+                'name': 'Operacoes',
+                'description': 'Departamento operacional',
+                'active': 'on',
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Department.objects.filter(name='Operacoes').exists())
+
+    def test_admin_can_soft_delete_department(self):
+        self.client.login(username='admin', password='12345678')
+        dep = Department.objects.create(name='Marketing', active=True)
+
+        response = self.client.post(
+            reverse('employees:department-deactivate', args=[dep.pk]),
+        )
+
+        self.assertEqual(response.status_code, 302)
+        dep.refresh_from_db()
+        self.assertFalse(dep.active)
+        self.assertTrue(Department.objects.filter(pk=dep.pk).exists())
+
+        list_response = self.client.get(reverse('employees:departments'))
+        self.assertEqual(list_response.status_code, 200)
+        department_names = [department.name for department in list_response.context['departments']]
+        self.assertNotIn('Marketing', department_names)
+
+    def test_manager_cannot_soft_delete_department(self):
+        self.client.login(username='manager', password='12345678')
+        dep = Department.objects.create(name='Compras', active=True)
+
+        response = self.client.post(
+            reverse('employees:department-deactivate', args=[dep.pk]),
+        )
+
+        self.assertEqual(response.status_code, 302)
+        dep.refresh_from_db()
+        self.assertTrue(dep.active)
+
+    def test_create_form_shows_only_active_departments(self):
+        Department.objects.create(name='Inativo', active=False)
+        form = EmployeeForm()
+        department_names = [dep.name for dep in form.fields['department'].queryset]
+        self.assertIn('Tecnologia', department_names)
+        self.assertNotIn('Inativo', department_names)
+
+    def test_edit_form_keeps_current_inactive_department_visible(self):
+        self.department.active = False
+        self.department.save(update_fields=['active'])
+
+        form = EmployeeForm(instance=self.employee)
+        department_ids = [dep.id for dep in form.fields['department'].queryset]
+        self.assertIn(self.department.id, department_ids)
+
+    def test_edit_form_shows_hire_date_in_html_date_format(self):
+        form = EmployeeForm(instance=self.employee)
+        rendered = str(form['hire_date'])
+        self.assertIn('value="2024-01-10"', rendered)
