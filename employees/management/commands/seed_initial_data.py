@@ -27,6 +27,23 @@ class Command(BaseCommand):
         admin_group = Group.objects.get(name='admin_rh')
         admin_user.groups.add(admin_group)
 
+        superadmin_user, superadmin_created = User.objects.get_or_create(
+            username='superadmin',
+            defaults={
+                'first_name': 'Super',
+                'last_name': 'Admin',
+                'email': 'superadmin@4you.local',
+            },
+        )
+        if superadmin_created:
+            superadmin_user.set_password('superadmin1234')
+
+        superadmin_user.is_active = True
+        superadmin_user.is_staff = True
+        superadmin_user.is_superuser = True
+        superadmin_user.save()
+        superadmin_user.groups.add(admin_group)
+
         departments = [
             'Tecnologia',
             'Financeiro',
@@ -61,3 +78,4 @@ class Command(BaseCommand):
                 )
 
         self.stdout.write(self.style.SUCCESS('Seed inicial concluido com sucesso.'))
+        self.stdout.write(self.style.SUCCESS('Usuario superadmin garantido com acesso total.'))

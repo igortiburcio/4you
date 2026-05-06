@@ -1,6 +1,7 @@
 from datetime import date
 
 from django.contrib.auth.models import Group, User
+from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 
@@ -160,3 +161,11 @@ class EmployeeFlowsTests(TestCase):
         form = EmployeeForm(instance=self.employee)
         rendered = str(form['hire_date'])
         self.assertIn('value="2024-01-10"', rendered)
+
+    def test_seed_creates_superadmin_with_full_access_and_group(self):
+        call_command('seed_initial_data')
+        superadmin = User.objects.get(username='superadmin')
+        self.assertTrue(superadmin.is_active)
+        self.assertTrue(superadmin.is_staff)
+        self.assertTrue(superadmin.is_superuser)
+        self.assertTrue(superadmin.groups.filter(name='admin_rh').exists())
