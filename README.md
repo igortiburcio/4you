@@ -9,6 +9,7 @@ O sistema foi pensado para pequenas e medias empresas que precisam centralizar o
 - [Visao geral](#visao-geral)
 - [Funcionalidades](#funcionalidades)
 - [Stack e arquitetura](#stack-e-arquitetura)
+- [Arquitetura detalhada](#arquitetura-detalhada)
 - [Requisitos](#requisitos)
 - [Como executar localmente](#como-executar-localmente)
 - [Credenciais iniciais](#credenciais-iniciais)
@@ -71,6 +72,102 @@ Padrao arquitetural adotado:
 - monolito web (uma aplicacao, um deploy, uma base);
 - separacao por apps Django (`core`, `accounts`, `employees`);
 - renderizacao server-side com atualizacoes parciais via HTMX.
+
+## Arquitetura detalhada
+
+### Onde o app inicializa
+
+- `manage.py`: ponto de entrada para comandos de desenvolvimento (`runserver`, `migrate`, `test`, etc.).
+- `config/settings.py`: configuracoes globais (apps instalados, templates, banco, auth, static).
+- `config/urls.py`: roteador principal que inclui as rotas dos apps (`core`, `accounts`, `employees`).
+- `config/wsgi.py` e `config/asgi.py`: pontos de entrada para deploy em servidores WSGI/ASGI.
+
+### Como as requisicoes fluem
+
+1. Navegador faz requisicao HTTP.
+2. Django resolve a rota em `config/urls.py` e encaminha para o app correto.
+3. A view do app processa regras e consulta modelos (`employees/models.py`).
+4. A view renderiza template HTML (SSR) e devolve pagina pronta ao cliente.
+5. Quando ha HTMX, apenas um fragmento (partial) e atualizado sem recarregar a pagina inteira.
+
+Diagrama do fluxo:
+
+```text
+[Browser]
+   |
+   | HTTP Request
+   v
+[config/urls.py]
+   |
+   | resolve rota
+   v
+[App URLConf]
+   |  (core/urls.py, accounts/urls.py, employees/urls.py)
+   v
+[View]
+   |
+   | valida permissao + aplica regra de negocio
+   v
+[Model/ORM]
+   |
+   | leitura/escrita
+   v
+[SQLite]
+   |
+   | dados
+   v
+[View]
+   |
+   | render(template, contexto)
+   v
+[Template SSR]
+   |
+   | HTML completo ou partial HTMX
+   v
+[Browser]
+```
+
+### Responsabilidade de cada app
+
+- `accounts`: autenticacao (login/logout), controle de acesso por grupos e tags auxiliares de template.
+- `core`: dashboard principal com indicadores resumidos.
+- `employees`: dominio de RH (funcionarios, departamentos, formularios, CRUD, filtros e analises).
+
+### Camadas internas
+
+- **Models**: definem estrutura e regras de dados (ex.: `Employee`, `Department`).
+- **Forms**: validam entrada do usuario (ex.: CPF, matricula unica).
+- **Views**: orquestram regras, permissao, consultas e renderizacao.
+- **Templates**: composicao visual SSR e parciais HTMX.
+- **Admin**: interface operacional para suporte e manutencao de dados.
+
+### Banco de dados e migracoes
+
+- Banco local: SQLite (`db.sqlite3`).
+- Evolucao de schema: arquivos em `employees/migrations/`.
+- Comandos:
+  - `uv run python manage.py makemigrations`
+  - `uv run python manage.py migrate`
+
+### Dados iniciais do sistema
+
+- Comando `seed_initial_data` cria:
+  - grupos (`admin_rh`, `gerente`, `funcionario`),
+  - usuario inicial `admin.rh`,
+  - departamentos padrao,
+  - funcionarios de exemplo.
+
+Execucao:
+
+```bash
+uv run python manage.py seed_initial_data
+```
+
+### Frontend no projeto
+
+- Renderizacao principal via Django Templates (SSR).
+- HTMX para interacoes parciais (filtros/paginacao/acoes sem reload total).
+- Chart.js para graficos da tela de analises.
 
 ## Requisitos
 
