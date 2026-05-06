@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Editar funcionario{% else %}Novo funcionario{% endif %} | 4you RH{% endblock %}
+
+{% block content %}
+  <div class="max-w-4xl mx-auto bg-white rounded-xl border border-slate-200 p-6">
+    <h1 class="text-2xl font-bold mb-6">{% if object %}Editar funcionario{% else %}Novo funcionario{% endif %}</h1>
+
+    <form method="post" class="grid md:grid-cols-2 gap-4">
+      {% csrf_token %}
+
+      {% for field in form %}
+        <div class="{% if field.name == 'department' or field.name == 'status' %}md:col-span-1{% endif %}">
+          <label for="{{ field.id_for_label }}" class="block text-sm font-semibold mb-1">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}
+            <p class="mt-1 text-sm text-red-700">{{ field.errors|striptags }}</p>
+          {% endif %}
+        </div>
+      {% endfor %}
+
+      <div class="md:col-span-2 flex gap-2 mt-2">
+        <button type="submit" class="bg-slate-900 text-white px-4 py-2 rounded font-semibold">Salvar</button>
+        <a href="{% url 'employees:list' %}" class="bg-white border border-slate-300 px-4 py-2 rounded">Cancelar</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}

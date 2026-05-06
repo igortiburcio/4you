@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Funcionarios | 4you RH{% endblock %}
+
+{% block content %}
+  <div class="flex flex-wrap gap-3 justify-between items-center mb-6">
+    <div>
+      <h1 class="text-3xl font-bold">Funcionarios</h1>
+      <p class="text-slate-600">Consulta, busca e acompanhamento de colaboradores.</p>
+    </div>
+    {% if can_manage_employees %}
+      <a href="{% url 'employees:create' %}" class="bg-amber-400 text-slate-900 px-4 py-2 rounded font-semibold">Novo funcionario</a>
+    {% endif %}
+  </div>
+
+  <form class="bg-white rounded-xl border border-slate-200 p-4 mb-4 grid md:grid-cols-4 gap-3"
+        method="get"
+        hx-get="{% url 'employees:list' %}"
+        hx-target="#employee-table"
+        hx-push-url="true">
+    <div class="md:col-span-3">
+      <label class="text-sm font-semibold">Buscar por nome, cargo, matricula ou CPF</label>
+      <input type="text" name="q" value="{{ query }}" class="w-full mt-1 rounded border border-slate-300 px-3 py-2" placeholder="Ex: Maria, Analista, MAT001">
+    </div>
+    <div>
+      <label class="text-sm font-semibold">Status</label>
+      <select name="status" class="w-full mt-1 rounded border border-slate-300 px-3 py-2">
+        <option value="">Todos</option>
+        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Ativo</option>
+        <option value="terminated" {% if status_filter == 'terminated' %}selected{% endif %}>Desligado</option>
+      </select>
+    </div>
+    <div class="md:col-span-4 flex gap-2">
+      <button type="submit" class="bg-slate-900 text-white px-4 py-2 rounded">Filtrar</button>
+      <a href="{% url 'employees:list' %}" class="bg-white border border-slate-300 px-4 py-2 rounded">Limpar</a>
+    </div>
+  </form>
+
+  <div id="employee-table">
+    {% include 'employees/partials/table.html' %}
+  </div>
+{% endblock %}

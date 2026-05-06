@@ -1,0 +1,62 @@
+<div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-50 text-slate-700">
+        <tr>
+          <th class="text-left px-4 py-3">Matricula</th>
+          <th class="text-left px-4 py-3">Nome</th>
+          <th class="text-left px-4 py-3">Cargo</th>
+          <th class="text-left px-4 py-3">Departamento</th>
+          <th class="text-left px-4 py-3">Salario</th>
+          <th class="text-left px-4 py-3">Status</th>
+          <th class="text-right px-4 py-3">Acoes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for employee in employees %}
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-3">{{ employee.registration }}</td>
+            <td class="px-4 py-3">{{ employee.name }}</td>
+            <td class="px-4 py-3">{{ employee.position }}</td>
+            <td class="px-4 py-3">{{ employee.department.name }}</td>
+            <td class="px-4 py-3 min-w-44">
+              <p class="font-medium">R$ {{ employee.salary|floatformat:2 }}</p>
+            </td>
+            <td class="px-4 py-3">
+              {% if employee.status == 'active' %}
+                <span class="px-2 py-1 rounded-full text-xs bg-emerald-100 text-emerald-800">Ativo</span>
+              {% else %}
+                <span class="px-2 py-1 rounded-full text-xs bg-amber-100 text-amber-800">Desligado</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-right space-x-2">
+              {% if can_manage_employees %}
+                <a href="{% url 'employees:edit' employee.pk %}" class="text-slate-700 hover:underline">Editar</a>
+                {% if employee.status == 'active' %}
+                  <form class="inline" method="post" action="{% url 'employees:terminate' employee.pk %}">
+                    {% csrf_token %}
+                    <button
+                      type="submit"
+                      class="text-red-700 hover:underline"
+                      hx-post="{% url 'employees:terminate' employee.pk %}?q={{ query }}&status={{ status_filter }}&page={{ page_obj.number }}"
+                      hx-target="#employee-table"
+                      hx-swap="innerHTML"
+                    >Desligar</button>
+                  </form>
+                {% endif %}
+              {% else %}
+                <span class="text-slate-400">Sem permissao</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7" class="px-4 py-6 text-center text-slate-500">Nenhum funcionario encontrado.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% include 'partials/pagination.html' %}

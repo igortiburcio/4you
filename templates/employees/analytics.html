@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}Analises | 4you RH{% endblock %}
+
+{% block content %}
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold">Analises de RH</h1>
+    <p class="text-slate-600">Visualizacao grafica de distribuicao de funcionarios.</p>
+  </div>
+
+  <section class="grid lg:grid-cols-2 gap-6 mb-6">
+    <article class="bg-white rounded-xl border border-slate-200 p-5">
+      <h2 class="text-lg font-semibold mb-4">Funcionarios por departamento</h2>
+      <div class="h-80">
+        <canvas id="departmentChart"></canvas>
+      </div>
+    </article>
+
+    <article class="bg-white rounded-xl border border-slate-200 p-5">
+      <h2 class="text-lg font-semibold mb-4">Funcionarios por status</h2>
+      <div class="h-80">
+        <canvas id="statusChart"></canvas>
+      </div>
+    </article>
+  </section>
+
+  <section>
+    <article class="bg-white rounded-xl border border-slate-200 p-5">
+      <h2 class="text-lg font-semibold mb-4">Salario por funcionario</h2>
+      <div class="h-96">
+        <canvas id="salaryChart"></canvas>
+      </div>
+    </article>
+  </section>
+
+  {{ department_labels|json_script:'department-labels' }}
+  {{ department_counts|json_script:'department-counts' }}
+  {{ status_labels|json_script:'status-labels' }}
+  {{ status_counts|json_script:'status-counts' }}
+  {{ salary_labels|json_script:'salary-labels' }}
+  {{ salary_values|json_script:'salary-values' }}
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const departmentLabels = JSON.parse(document.getElementById('department-labels').textContent);
+    const departmentCounts = JSON.parse(document.getElementById('department-counts').textContent);
+    const statusLabels = JSON.parse(document.getElementById('status-labels').textContent);
+    const statusCounts = JSON.parse(document.getElementById('status-counts').textContent);
+    const salaryLabels = JSON.parse(document.getElementById('salary-labels').textContent);
+    const salaryValues = JSON.parse(document.getElementById('salary-values').textContent);
+
+    const departmentCtx = document.getElementById('departmentChart');
+    const statusCtx = document.getElementById('statusChart');
+    const salaryCtx = document.getElementById('salaryChart');
+
+    new Chart(departmentCtx, {
+      type: 'bar',
+      data: {
+        labels: departmentLabels,
+        datasets: [{
+          label: 'Total de funcionarios',
+          data: departmentCounts,
+          backgroundColor: '#0f766e',
+          borderRadius: 8,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { precision: 0 },
+          },
+        },
+      },
+    });
+
+    new Chart(statusCtx, {
+      type: 'doughnut',
+      data: {
+        labels: statusLabels,
+        datasets: [{
+          data: statusCounts,
+          backgroundColor: ['#16a34a', '#d97706'],
+          hoverOffset: 8,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom' },
+        },
+      },
+    });
+
+    new Chart(salaryCtx, {
+      type: 'line',
+      data: {
+        labels: salaryLabels,
+        datasets: [{
+          label: 'Salario (R$)',
+          data: salaryValues,
+          borderColor: '#1d4ed8',
+          backgroundColor: 'rgba(29, 78, 216, 0.15)',
+          pointBackgroundColor: '#1d4ed8',
+          tension: 0.25,
+          fill: true,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) {
+                return 'R$ ' + Number(value).toLocaleString('pt-BR');
+              }
+            }
+          }
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return 'R$ ' + Number(context.parsed.y).toLocaleString('pt-BR', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                });
+              }
+            }
+          }
+        }
+      },
+    });
+  </script>
+{% endblock %}

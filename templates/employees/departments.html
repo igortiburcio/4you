@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Departamentos | 4you RH{% endblock %}
+
+{% block content %}
+  <div class="grid lg:grid-cols-2 gap-6">
+    <section class="bg-white rounded-xl border border-slate-200 p-6">
+      <h1 class="text-2xl font-bold mb-4">Novo departamento</h1>
+      <form method="post" class="space-y-4">
+        {% csrf_token %}
+        {% for field in form %}
+          <div>
+            <label for="{{ field.id_for_label }}" class="block text-sm font-semibold mb-1">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+              <p class="mt-1 text-sm text-red-700">{{ field.errors|striptags }}</p>
+            {% endif %}
+          </div>
+        {% endfor %}
+        <button type="submit" class="bg-slate-900 text-white px-4 py-2 rounded font-semibold">Salvar departamento</button>
+      </form>
+    </section>
+
+    <section class="bg-white rounded-xl border border-slate-200 p-6">
+      <h2 class="text-xl font-bold mb-4">Lista de departamentos</h2>
+      <ul class="divide-y divide-slate-100">
+        {% for dep in departments %}
+          <li class="py-3 flex justify-between items-center">
+            <div>
+              <p class="font-semibold">{{ dep.name }}</p>
+              {% if dep.description %}<p class="text-sm text-slate-600">{{ dep.description }}</p>{% endif %}
+            </div>
+            {% if dep.active %}
+              <span class="px-2 py-1 rounded text-xs bg-emerald-100 text-emerald-800">Ativo</span>
+            {% else %}
+              <span class="px-2 py-1 rounded text-xs bg-slate-100 text-slate-700">Inativo</span>
+            {% endif %}
+          </li>
+        {% empty %}
+          <li class="py-3 text-slate-500">Nenhum departamento cadastrado.</li>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
+{% endblock %}

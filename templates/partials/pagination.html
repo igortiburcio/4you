@@ -1,0 +1,25 @@
+{% if is_paginated %}
+  <div class="mt-4 flex items-center justify-between text-sm">
+    <div>Pagina {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</div>
+    <div class="flex gap-2">
+      {% if page_obj.has_previous %}
+        <a
+          class="px-3 py-1.5 bg-white border rounded hover:bg-slate-50"
+          href="?page={{ page_obj.previous_page_number }}&q={{ query }}&status={{ status_filter }}"
+          hx-get="?page={{ page_obj.previous_page_number }}&q={{ query }}&status={{ status_filter }}"
+          hx-target="#employee-table"
+          hx-push-url="true"
+        >Anterior</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+        <a
+          class="px-3 py-1.5 bg-white border rounded hover:bg-slate-50"
+          href="?page={{ page_obj.next_page_number }}&q={{ query }}&status={{ status_filter }}"
+          hx-get="?page={{ page_obj.next_page_number }}&q={{ query }}&status={{ status_filter }}"
+          hx-target="#employee-table"
+          hx-push-url="true"
+        >Proxima</a>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}

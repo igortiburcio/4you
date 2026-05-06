@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard | 4you RH{% endblock %}
+
+{% block content %}
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold">Painel de RH</h1>
+    <p class="text-slate-600 mt-1">Visao geral do sistema e estatisticas principais.</p>
+  </div>
+
+  <section class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <article class="bg-white rounded-xl shadow p-5 border border-slate-200">
+      <p class="text-sm text-slate-500">Total de funcionarios</p>
+      <p class="text-3xl font-bold mt-2">{{ total_employees }}</p>
+    </article>
+    <article class="bg-white rounded-xl shadow p-5 border border-slate-200">
+      <p class="text-sm text-slate-500">Ativos</p>
+      <p class="text-3xl font-bold mt-2 text-emerald-700">{{ active_employees }}</p>
+    </article>
+    <article class="bg-white rounded-xl shadow p-5 border border-slate-200">
+      <p class="text-sm text-slate-500">Desligados</p>
+      <p class="text-3xl font-bold mt-2 text-amber-700">{{ terminated_employees }}</p>
+    </article>
+    <article class="bg-white rounded-xl shadow p-5 border border-slate-200">
+      <p class="text-sm text-slate-500">Departamentos</p>
+      <p class="text-3xl font-bold mt-2">{{ total_departments }}</p>
+    </article>
+  </section>
+{% endblock %}
