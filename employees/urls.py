@@ -8,6 +8,8 @@ from .views import (
     EmployeeListView,
     EmployeeTerminateView,
     EmployeeUpdateView,
+    PositionCreateView,
+    PositionDeactivateView,
 )
 
 app_name = 'employees'
@@ -19,5 +21,7 @@ urlpatterns = [
     path('<int:pk>/terminate/', EmployeeTerminateView.as_view(), name='terminate'),
     path('departments/', DepartmentListCreateView.as_view(), name='departments'),
     path('departments/<int:pk>/deactivate/', DepartmentDeactivateView.as_view(), name='department-deactivate'),
+    path('positions/new/', PositionCreateView.as_view(), name='position-create'),
+    path('positions/<int:pk>/deactivate/', PositionDeactivateView.as_view(), name='position-deactivate'),
     path('analytics/', EmployeeAnalyticsView.as_view(), name='analytics'),
 ]

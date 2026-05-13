@@ -11,8 +11,8 @@ from django.urls import reverse_lazy
 from django.views import View
 from django.views.generic import CreateView, ListView, TemplateView, UpdateView
 
-from .forms import DepartmentForm, EmployeeForm
-from .models import Department, Employee
+from .forms import DepartmentForm, EmployeeForm, PositionForm
+from .models import Department, Employee, Position
 
 
 class GroupRequiredMixin(UserPassesTestMixin):
@@ -46,7 +46,7 @@ class EmployeeListView(LoginRequiredMixin, ListView):
         if query:
             queryset = queryset.filter(
                 Q(name__icontains=query)
-                | Q(position__icontains=query)
+                | Q(position__name__icontains=query)
                 | Q(registration__icontains=query)
                 | Q(cpf__icontains=query)
             )
@@ -111,7 +111,7 @@ class EmployeeTerminateView(LoginRequiredMixin, GroupRequiredMixin, View):
             if query:
                 queryset = queryset.filter(
                     Q(name__icontains=query)
-                    | Q(position__icontains=query)
+                    | Q(position__name__icontains=query)
                     | Q(registration__icontains=query)
                     | Q(cpf__icontains=query)
                 )
@@ -147,11 +147,18 @@ class DepartmentListCreateView(LoginRequiredMixin, GroupRequiredMixin, View):
 
     def get(self, request):
         form = DepartmentForm()
+        position_form = PositionForm()
         departments = Department.objects.filter(active=True)
+        positions = Position.objects.filter(active=True).select_related('department').order_by('department__name', 'name')
         return render(
             request,
             self.template_name,
-            {'form': form, 'departments': departments},
+            {
+                'form': form,
+                'departments': departments,
+                'position_form': position_form,
+                'positions': positions,
+            },
         )
 
     def post(self, request):
@@ -161,10 +168,17 @@ class DepartmentListCreateView(LoginRequiredMixin, GroupRequiredMixin, View):
             messages.success(request, 'Departamento criado com sucesso.')
             return redirect('employees:departments')
         departments = Department.objects.filter(active=True)
+        position_form = PositionForm()
+        positions = Position.objects.filter(active=True).select_related('department').order_by('department__name', 'name')
         return render(
             request,
             self.template_name,
-            {'form': form, 'departments': departments},
+            {
+                'form': form,
+                'departments': departments,
+                'position_form': position_form,
+                'positions': positions,
+            },
         )
 
 
@@ -180,6 +194,34 @@ class DepartmentDeactivateView(LoginRequiredMixin, GroupRequiredMixin, View):
         department.active = False
         department.save(update_fields=['active', 'updated_at'])
         messages.success(request, f'Departamento {department.name} foi inativado.')
+        return redirect('employees:departments')
+
+
+class PositionCreateView(LoginRequiredMixin, GroupRequiredMixin, View):
+    allowed_groups = ['admin_rh']
+
+    def post(self, request):
+        form = PositionForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Cargo criado com sucesso.')
+        else:
+            messages.error(request, form.errors.as_text())
+        return redirect('employees:departments')
+
+
+class PositionDeactivateView(LoginRequiredMixin, GroupRequiredMixin, View):
+    allowed_groups = ['admin_rh']
+
+    def post(self, request, pk):
+        position = get_object_or_404(Position, pk=pk)
+        if not position.active:
+            messages.info(request, 'Cargo ja esta inativo.')
+            return redirect('employees:departments')
+
+        position.active = False
+        position.save(update_fields=['active', 'updated_at'])
+        messages.success(request, f'Cargo {position.name} foi inativado.')
         return redirect('employees:departments')
 
 

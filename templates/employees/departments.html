@@ -3,7 +3,7 @@
 {% block title %}Departamentos | 4you RH{% endblock %}
 
 {% block content %}
-  <div class="grid lg:grid-cols-2 gap-6">
+  <div class="grid lg:grid-cols-3 gap-6">
     <section class="bg-white rounded-xl border border-slate-200 p-6">
       <h1 class="text-2xl font-bold mb-4">Novo departamento</h1>
       <form method="post" class="space-y-4">
@@ -47,6 +47,44 @@
           </li>
         {% empty %}
           <li class="py-3 text-slate-500">Nenhum departamento cadastrado.</li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="bg-white rounded-xl border border-slate-200 p-6">
+      <h2 class="text-xl font-bold mb-4">Cargos por departamento</h2>
+
+      <form method="post" action="{% url 'employees:position-create' %}" class="space-y-4 mb-6">
+        {% csrf_token %}
+        {% for field in position_form %}
+          <div>
+            <label for="{{ field.id_for_label }}" class="block text-sm font-semibold mb-1">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+              <p class="mt-1 text-sm text-red-700">{{ field.errors|striptags }}</p>
+            {% endif %}
+          </div>
+        {% endfor %}
+        <button type="submit" class="bg-slate-900 text-white px-4 py-2 rounded font-semibold">Salvar cargo</button>
+      </form>
+
+      <ul class="divide-y divide-slate-100">
+        {% for position in positions %}
+          <li class="py-3 flex justify-between items-center">
+            <div>
+              <p class="font-semibold">{{ position.name }}</p>
+              <p class="text-sm text-slate-600">{{ position.department.name }}</p>
+            </div>
+            <form method="post" action="{% url 'employees:position-deactivate' position.pk %}">
+              {% csrf_token %}
+              <button
+                type="submit"
+                class="text-xs px-3 py-1.5 rounded bg-red-50 text-red-700 border border-red-200 hover:bg-red-100"
+              >Inativar</button>
+            </form>
+          </li>
+        {% empty %}
+          <li class="py-3 text-slate-500">Nenhum cargo ativo cadastrado.</li>
         {% endfor %}
       </ul>
     </section>

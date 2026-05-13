@@ -3,7 +3,7 @@ import re
 from django import forms
 from django.db.models import Q
 
-from .models import Department, Employee
+from .models import Department, Employee, Position
 
 
 class DepartmentForm(forms.ModelForm):
@@ -17,6 +17,36 @@ class DepartmentForm(forms.ModelForm):
         }
 
 
+class PositionForm(forms.ModelForm):
+    class Meta:
+        model = Position
+        fields = ['department', 'name', 'active']
+        labels = {
+            'department': 'Departamento',
+            'name': 'Cargo',
+            'active': 'Ativo',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['department'].queryset = Department.objects.filter(active=True).order_by('name')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        department = cleaned_data.get('department')
+        name = (cleaned_data.get('name') or '').strip()
+        if not department or not name:
+            return cleaned_data
+
+        queryset = Position.objects.filter(department=department, name__iexact=name)
+        if self.instance.pk:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        if queryset.exists():
+            raise forms.ValidationError('Este cargo ja existe neste departamento.')
+        cleaned_data['name'] = name
+        return cleaned_data
+
+
 class EmployeeForm(forms.ModelForm):
     class Meta:
         model = Employee
@@ -24,7 +54,7 @@ class EmployeeForm(forms.ModelForm):
             'registration',
             'name',
             'cpf',
-            'age',
+            'birth_date',
             'position',
             'salary',
             'hire_date',
@@ -32,6 +62,10 @@ class EmployeeForm(forms.ModelForm):
             'status',
         ]
         widgets = {
+            'birth_date': forms.DateInput(
+                format='%Y-%m-%d',
+                attrs={'type': 'date'},
+            ),
             'hire_date': forms.DateInput(
                 format='%Y-%m-%d',
                 attrs={'type': 'date'},
@@ -41,7 +75,7 @@ class EmployeeForm(forms.ModelForm):
             'registration': 'Matricula',
             'name': 'Nome',
             'cpf': 'CPF',
-            'age': 'Idade',
+            'birth_date': 'Data de nascimento',
             'position': 'Cargo',
             'salary': 'Salario',
             'hire_date': 'Data de admissao',
@@ -51,8 +85,22 @@ class EmployeeForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['birth_date'].input_formats = ['%Y-%m-%d', '%d/%m/%Y']
         self.fields['hire_date'].input_formats = ['%Y-%m-%d', '%d/%m/%Y']
         active_departments = Department.objects.filter(active=True)
+        self.fields['position'].queryset = Position.objects.filter(active=True).select_related('department').order_by('name')
+
+        selected_department_id = None
+        if self.is_bound:
+            selected_department_id = self.data.get('department')
+        elif self.instance and self.instance.pk:
+            selected_department_id = self.instance.department_id
+
+        if selected_department_id:
+            self.fields['position'].queryset = Position.objects.filter(
+                Q(active=True) | Q(pk=getattr(self.instance, 'position_id', None)),
+                department_id=selected_department_id,
+            ).select_related('department').order_by('name')
 
         if self.instance and self.instance.pk and self.instance.department_id:
             self.fields['department'].queryset = Department.objects.filter(
@@ -84,3 +132,14 @@ class EmployeeForm(forms.ModelForm):
         if queryset.exists():
             raise forms.ValidationError('Matricula ja cadastrada.')
         return registration
+
+    def clean(self):
+        cleaned_data = super().clean()
+        department = cleaned_data.get('department')
+        position = cleaned_data.get('position')
+        if not department or not position:
+            return cleaned_data
+
+        if position.department_id != department.id:
+            self.add_error('position', 'O cargo selecionado nao pertence ao departamento informado.')
+        return cleaned_data

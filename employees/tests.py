@@ -5,8 +5,8 @@ from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import Department, Employee
 from .forms import EmployeeForm
+from .models import Department, Employee, Position
 
 
 class EmployeeFlowsTests(TestCase):
@@ -21,12 +21,13 @@ class EmployeeFlowsTests(TestCase):
         self.manager.groups.add(self.manager_group)
 
         self.department = Department.objects.create(name='Tecnologia')
+        self.position = Position.objects.create(name='Analista', department=self.department)
         self.employee = Employee.objects.create(
             registration='MAT100',
             name='Maria Lima',
             cpf='111.222.333-44',
-            age=28,
-            position='Analista',
+            birth_date=date(1996, 1, 10),
+            position=self.position,
             salary=5000,
             hire_date=date(2024, 1, 10),
             department=self.department,
@@ -46,8 +47,8 @@ class EmployeeFlowsTests(TestCase):
                 'registration': 'MAT101',
                 'name': 'Joao Silva',
                 'cpf': '12312312399',
-                'age': 30,
-                'position': 'Dev',
+                'birth_date': '1994-05-17',
+                'position': self.position.pk,
                 'salary': 7000,
                 'hire_date': '2024-02-01',
                 'department': self.department.pk,
@@ -77,8 +78,8 @@ class EmployeeFlowsTests(TestCase):
                 'registration': 'MAT102',
                 'name': 'Outra Pessoa',
                 'cpf': '11122233344',
-                'age': 26,
-                'position': 'Assistente',
+                'birth_date': '1998-08-20',
+                'position': self.position.pk,
                 'salary': 2500,
                 'hire_date': '2024-03-01',
                 'department': self.department.pk,
@@ -161,6 +162,41 @@ class EmployeeFlowsTests(TestCase):
         form = EmployeeForm(instance=self.employee)
         rendered = str(form['hire_date'])
         self.assertIn('value="2024-01-10"', rendered)
+
+    def test_create_position_and_soft_delete_position(self):
+        self.client.login(username='admin', password='12345678')
+        response = self.client.post(
+            reverse('employees:position-create'),
+            {'department': self.department.pk, 'name': 'Tech Lead', 'active': 'on'},
+        )
+        self.assertEqual(response.status_code, 302)
+        position = Position.objects.get(department=self.department, name='Tech Lead')
+        self.assertTrue(position.active)
+
+        response = self.client.post(reverse('employees:position-deactivate', args=[position.pk]))
+        self.assertEqual(response.status_code, 302)
+        position.refresh_from_db()
+        self.assertFalse(position.active)
+
+    def test_employee_form_rejects_position_from_other_department(self):
+        finance = Department.objects.create(name='Financeiro')
+        finance_position = Position.objects.create(name='Analista Financeiro', department=finance)
+
+        form = EmployeeForm(
+            data={
+                'registration': 'MAT103',
+                'name': 'Carlos Teste',
+                'cpf': '98765432100',
+                'birth_date': '1990-01-01',
+                'position': finance_position.pk,
+                'salary': 5000,
+                'hire_date': '2024-01-01',
+                'department': self.department.pk,
+                'status': Employee.Status.ACTIVE,
+            }
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn('position', form.errors)
 
     def test_seed_creates_superadmin_with_full_access_and_group(self):
         call_command('seed_initial_data')
