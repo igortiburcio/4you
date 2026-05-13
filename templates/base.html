@@ -6,27 +6,30 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}4you RH{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
-<body class="bg-slate-100 text-slate-900 min-h-screen">
-  <header class="bg-slate-900 text-white shadow">
+<body class="app-shell min-h-screen">
+  <header class="app-nav sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-      <a class="font-bold text-xl" href="{% url 'core:dashboard' %}">4you RH</a>
+      <a class="font-extrabold text-xl tracking-tight text-slate-900" href="{% url 'core:dashboard' %}">4you RH</a>
       {% if request.user.is_authenticated %}
-        <nav class="flex items-center gap-4 text-sm">
-          <a class="hover:text-amber-300" href="{% url 'core:dashboard' %}">Painel</a>
-          <a class="hover:text-amber-300" href="{% url 'employees:list' %}">Funcionarios</a>
+        <nav class="flex items-center gap-2 text-sm font-medium">
+          <a class="nav-pill" href="{% url 'core:dashboard' %}">Painel</a>
+          <a class="nav-pill" href="{% url 'employees:list' %}">Funcionarios</a>
           {% if request.user.is_superuser or request.user|has_group:'admin_rh' or request.user|has_group:'gerente' %}
-            <a class="hover:text-amber-300" href="{% url 'employees:analytics' %}">Analises</a>
+            <a class="nav-pill" href="{% url 'employees:analytics' %}">Analises</a>
           {% endif %}
           {% if request.user.is_superuser or request.user|has_group:'admin_rh' %}
-            <a class="hover:text-amber-300" href="{% url 'employees:departments' %}">Departamentos</a>
+            <a class="nav-pill" href="{% url 'employees:departments' %}">Departamentos</a>
           {% endif %}
           <form method="post" action="{% url 'accounts:logout' %}">
             {% csrf_token %}
-            <button type="submit" class="bg-amber-400 text-slate-900 px-3 py-1.5 rounded font-semibold">Sair</button>
+            <button type="submit" class="nav-danger">Sair</button>
           </form>
         </nav>
       {% endif %}

@@ -3,8 +3,14 @@
 {% block title %}{% if object %}Editar funcionario{% else %}Novo funcionario{% endif %} | 4you RH{% endblock %}
 
 {% block content %}
-  <div class="max-w-4xl mx-auto bg-white rounded-xl border border-slate-200 p-6">
+  <div class="max-w-4xl mx-auto glass-card p-6">
     <h1 class="text-2xl font-bold mb-6">{% if object %}Editar funcionario{% else %}Novo funcionario{% endif %}</h1>
+
+    {% if object and object.needs_profile_update %}
+      <div class="mb-4 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50 text-amber-900 text-sm">
+        Este colaborador foi movido para <strong>Cargo transitorio</strong>. Atualize departamento e cargo para finalizar.
+      </div>
+    {% endif %}
 
     <form method="post" class="grid md:grid-cols-2 gap-4" id="employee-form">
       {% csrf_token %}
@@ -84,11 +90,6 @@
       }
 
       const initialPositionValue = positionInput.value;
-      const allOptions = Array.from(positionInput.options).map((option) => ({
-        value: option.value,
-        text: option.text,
-      }));
-
       async function rebuildPositions(selectedDepartmentId, keepValue) {
         positionInput.innerHTML = '';
         const empty = document.createElement('option');

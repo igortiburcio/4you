@@ -30,6 +30,9 @@
               {% endif %}
             </td>
             <td class="px-4 py-3 text-right space-x-2">
+              {% if employee.needs_profile_update %}
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-amber-100 text-amber-800 mr-2">Atualizar dados</span>
+              {% endif %}
               {% if can_manage_employees %}
                 <a href="{% url 'employees:edit' employee.pk %}" class="text-slate-700 hover:underline">Editar</a>
                 {% if employee.status == 'active' %}
