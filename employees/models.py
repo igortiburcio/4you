@@ -18,6 +18,7 @@ class Department(models.Model):
 
 class Position(models.Model):
     name = models.CharField(max_length=120)
+    base_salary = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     department = models.ForeignKey(
         Department,
         on_delete=models.PROTECT,
@@ -33,7 +34,11 @@ class Position(models.Model):
             models.UniqueConstraint(
                 fields=['department', 'name'],
                 name='unique_position_per_department',
-            )
+            ),
+            models.CheckConstraint(
+                check=Q(base_salary__gte=0),
+                name='position_base_salary_non_negative',
+            ),
         ]
 
     def __str__(self):

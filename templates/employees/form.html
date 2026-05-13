@@ -6,18 +6,64 @@
   <div class="max-w-4xl mx-auto bg-white rounded-xl border border-slate-200 p-6">
     <h1 class="text-2xl font-bold mb-6">{% if object %}Editar funcionario{% else %}Novo funcionario{% endif %}</h1>
 
-    <form method="post" class="grid md:grid-cols-2 gap-4">
+    <form method="post" class="grid md:grid-cols-2 gap-4" id="employee-form">
       {% csrf_token %}
 
-      {% for field in form %}
-        <div class="{% if field.name == 'department' or field.name == 'status' %}md:col-span-1{% endif %}">
-          <label for="{{ field.id_for_label }}" class="block text-sm font-semibold mb-1">{{ field.label }}</label>
-          {{ field }}
-          {% if field.errors %}
-            <p class="mt-1 text-sm text-red-700">{{ field.errors|striptags }}</p>
-          {% endif %}
-        </div>
-      {% endfor %}
+      <div>
+        <label for="{{ form.registration.id_for_label }}" class="block text-sm font-semibold mb-1">{{ form.registration.label }}</label>
+        {{ form.registration }}
+        {% if form.registration.errors %}<p class="mt-1 text-sm text-red-700">{{ form.registration.errors|striptags }}</p>{% endif %}
+      </div>
+
+      <div>
+        <label for="{{ form.name.id_for_label }}" class="block text-sm font-semibold mb-1">{{ form.name.label }}</label>
+        {{ form.name }}
+        {% if form.name.errors %}<p class="mt-1 text-sm text-red-700">{{ form.name.errors|striptags }}</p>{% endif %}
+      </div>
+
+      <div>
+        <label for="{{ form.cpf.id_for_label }}" class="block text-sm font-semibold mb-1">{{ form.cpf.label }}</label>
+        {{ form.cpf }}
+        {% if form.cpf.errors %}<p class="mt-1 text-sm text-red-700">{{ form.cpf.errors|striptags }}</p>{% endif %}
+      </div>
+
+      <div>
+        <label for="{{ form.birth_date.id_for_label }}" class="block text-sm font-semibold mb-1">{{ form.birth_date.label }}</label>
+        {{ form.birth_date }}
+        {% if form.birth_date.errors %}<p class="mt-1 text-sm text-red-700">{{ form.birth_date.errors|striptags }}</p>{% endif %}
+      </div>
+
+      <div>
+        <label for="{{ form.department.id_for_label }}" class="block text-sm font-semibold mb-1">{{ form.department.label }}</label>
+        {{ form.department }}
+        {% if form.department.errors %}<p class="mt-1 text-sm text-red-700">{{ form.department.errors|striptags }}</p>{% endif %}
+      </div>
+
+      <div>
+        <label for="{{ form.position.id_for_label }}" class="block text-sm font-semibold mb-1">{{ form.position.label }}</label>
+        {{ form.position }}
+        <p id="position-helper" class="mt-1 text-xs text-slate-500">Selecione um departamento para habilitar os cargos.</p>
+        {% if form.position.errors %}<p class="mt-1 text-sm text-red-700">{{ form.position.errors|striptags }}</p>{% endif %}
+      </div>
+
+      <div>
+        <label for="{{ form.salary.id_for_label }}" class="block text-sm font-semibold mb-1">{{ form.salary.label }}</label>
+        {{ form.salary }}
+        <p class="mt-1 text-xs text-slate-500">O salario base do cargo sera preenchido automaticamente, mas voce pode ajustar.</p>
+        {% if form.salary.errors %}<p class="mt-1 text-sm text-red-700">{{ form.salary.errors|striptags }}</p>{% endif %}
+      </div>
+
+      <div>
+        <label for="{{ form.hire_date.id_for_label }}" class="block text-sm font-semibold mb-1">{{ form.hire_date.label }}</label>
+        {{ form.hire_date }}
+        {% if form.hire_date.errors %}<p class="mt-1 text-sm text-red-700">{{ form.hire_date.errors|striptags }}</p>{% endif %}
+      </div>
+
+      <div>
+        <label for="{{ form.status.id_for_label }}" class="block text-sm font-semibold mb-1">{{ form.status.label }}</label>
+        {{ form.status }}
+        {% if form.status.errors %}<p class="mt-1 text-sm text-red-700">{{ form.status.errors|striptags }}</p>{% endif %}
+      </div>
 
       <div class="md:col-span-2 flex gap-2 mt-2">
         <button type="submit" class="bg-slate-900 text-white px-4 py-2 rounded font-semibold">Salvar</button>
@@ -25,4 +71,90 @@
       </div>
     </form>
   </div>
+
+  <script>
+    (function () {
+      const departmentInput = document.getElementById('id_department');
+      const positionInput = document.getElementById('id_position');
+      const salaryInput = document.getElementById('id_salary');
+      const positionHelper = document.getElementById('position-helper');
+
+      if (!departmentInput || !positionInput || !salaryInput) {
+        return;
+      }
+
+      const initialPositionValue = positionInput.value;
+      const allOptions = Array.from(positionInput.options).map((option) => ({
+        value: option.value,
+        text: option.text,
+      }));
+
+      async function rebuildPositions(selectedDepartmentId, keepValue) {
+        positionInput.innerHTML = '';
+        const empty = document.createElement('option');
+        empty.value = '';
+        empty.textContent = selectedDepartmentId ? 'Selecione um cargo' : 'Selecione um departamento primeiro';
+        positionInput.appendChild(empty);
+
+        if (!selectedDepartmentId) {
+          positionInput.disabled = true;
+          positionHelper.textContent = 'Selecione um departamento para habilitar os cargos.';
+          return;
+        }
+
+        const response = await fetch(`?department=${selectedDepartmentId}`, {
+          headers: {'X-Requested-With': 'XMLHttpRequest'}
+        });
+        if (!response.ok) {
+          positionInput.disabled = true;
+          positionHelper.textContent = 'Nao foi possivel carregar os cargos deste departamento.';
+          return;
+        }
+
+        const data = await response.json();
+        const filtered = data.positions || [];
+
+        filtered.forEach((opt) => {
+          const option = document.createElement('option');
+          option.value = opt.value;
+          option.textContent = opt.text;
+          if (keepValue && String(opt.value) === String(keepValue)) {
+            option.selected = true;
+          }
+          positionInput.appendChild(option);
+        });
+
+        positionInput.disabled = false;
+        positionHelper.textContent = filtered.length
+          ? 'Escolha o cargo para preencher o salario base automaticamente.'
+          : 'Este departamento nao possui cargos ativos.';
+      }
+
+      async function fillBaseSalary(positionId) {
+        if (!positionId) return;
+        try {
+          const response = await fetch(`/employees/positions/${positionId}/base-salary/`);
+          if (!response.ok) return;
+          const data = await response.json();
+          salaryInput.value = Number(data.base_salary).toFixed(2);
+        } catch (err) {
+          // silent
+        }
+      }
+
+      departmentInput.addEventListener('change', function () {
+        rebuildPositions(this.value, null);
+        salaryInput.value = '';
+      });
+
+      positionInput.addEventListener('change', function () {
+        fillBaseSalary(this.value);
+      });
+
+      rebuildPositions(departmentInput.value, initialPositionValue || null);
+      if (positionInput.value) {
+        fillBaseSalary(positionInput.value);
+      }
+    })();
+  </script>
 {% endblock %}

@@ -57,20 +57,39 @@ class Command(BaseCommand):
             department_objects[dep] = department
 
         positions_by_department = {
-            'Tecnologia': ['Desenvolvedor', 'Tech Lead', 'QA'],
-            'Financeiro': ['Financeiro Jr', 'Analista Financeiro'],
-            'Juridico': ['Assistente Juridico', 'Analista Juridico'],
-            'Vendas': ['Gerente Comercial', 'Executivo de Vendas'],
-            'RH': ['Analista RH', 'Coordenador RH'],
+            'Tecnologia': [
+                ('Desenvolvedor', 6800.00),
+                ('Tech Lead', 9800.00),
+                ('QA', 5200.00),
+            ],
+            'Financeiro': [
+                ('Financeiro Jr', 3900.00),
+                ('Analista Financeiro', 6100.00),
+            ],
+            'Juridico': [
+                ('Assistente Juridico', 3500.00),
+                ('Analista Juridico', 6200.00),
+            ],
+            'Vendas': [
+                ('Gerente Comercial', 9200.00),
+                ('Executivo de Vendas', 5400.00),
+            ],
+            'RH': [
+                ('Analista RH', 4200.00),
+                ('Coordenador RH', 7700.00),
+            ],
         }
         position_objects = {}
-        for dep_name, position_names in positions_by_department.items():
-            for position_name in position_names:
+        for dep_name, position_specs in positions_by_department.items():
+            for position_name, base_salary in position_specs:
                 position, _ = Position.objects.get_or_create(
                     department=department_objects[dep_name],
                     name=position_name,
-                    defaults={'active': True},
+                    defaults={'active': True, 'base_salary': base_salary},
                 )
+                if position.base_salary != base_salary:
+                    position.base_salary = base_salary
+                    position.save(update_fields=['base_salary', 'updated_at'])
                 position_objects[(dep_name, position_name)] = position
 
         if not Employee.objects.exists():

@@ -21,7 +21,7 @@ class EmployeeFlowsTests(TestCase):
         self.manager.groups.add(self.manager_group)
 
         self.department = Department.objects.create(name='Tecnologia')
-        self.position = Position.objects.create(name='Analista', department=self.department)
+        self.position = Position.objects.create(name='Analista', department=self.department, base_salary=5000)
         self.employee = Employee.objects.create(
             registration='MAT100',
             name='Maria Lima',
@@ -57,6 +57,8 @@ class EmployeeFlowsTests(TestCase):
         )
         self.assertEqual(response.status_code, 302)
         self.assertTrue(Employee.objects.filter(registration='MAT101').exists())
+        created = Employee.objects.get(registration='MAT101')
+        self.assertEqual(created.position_id, self.position.pk)
 
     def test_manager_cannot_create_employee(self):
         self.client.login(username='manager', password='12345678')
@@ -166,8 +168,13 @@ class EmployeeFlowsTests(TestCase):
     def test_create_position_and_soft_delete_position(self):
         self.client.login(username='admin', password='12345678')
         response = self.client.post(
-            reverse('employees:position-create'),
-            {'department': self.department.pk, 'name': 'Tech Lead', 'active': 'on'},
+            reverse('employees:position-create', args=[self.department.pk]),
+            {
+                'department': self.department.pk,
+                'name': 'Tech Lead',
+                'base_salary': '8000.00',
+                'active': 'on',
+            },
         )
         self.assertEqual(response.status_code, 302)
         position = Position.objects.get(department=self.department, name='Tech Lead')
@@ -177,6 +184,41 @@ class EmployeeFlowsTests(TestCase):
         self.assertEqual(response.status_code, 302)
         position.refresh_from_db()
         self.assertFalse(position.active)
+
+    def test_department_detail_lists_positions_and_base_salary(self):
+        self.client.login(username='admin', password='12345678')
+        self.position.base_salary = 4500
+        self.position.save(update_fields=['base_salary'])
+
+        response = self.client.get(reverse('employees:department-detail', args=[self.department.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Cargos do departamento')
+        self.assertContains(response, '4500')
+
+    def test_position_base_salary_endpoint(self):
+        self.client.login(username='admin', password='12345678')
+        self.position.base_salary = 5000
+        self.position.save(update_fields=['base_salary'])
+
+        response = self.client.get(reverse('employees:position-base-salary', args=[self.position.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['base_salary'], 5000.0)
+
+    def test_employee_create_ajax_positions_only_from_selected_department(self):
+        self.client.login(username='admin', password='12345678')
+        finance = Department.objects.create(name='Financeiro')
+        Position.objects.create(name='Analista Financeiro', department=finance, base_salary=4200)
+
+        response = self.client.get(
+            reverse('employees:create'),
+            {'department': self.department.pk},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()['positions']
+        names = [item['text'] for item in payload]
+        self.assertIn('Analista', names)
+        self.assertNotIn('Analista Financeiro', names)
 
     def test_employee_form_rejects_position_from_other_department(self):
         finance = Department.objects.create(name='Financeiro')

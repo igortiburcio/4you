@@ -5,13 +5,14 @@ from django.db.models import Case, Count
 from django.db.models import CharField
 from django.db.models import Q
 from django.db.models import Value, When
+from django.http import JsonResponse
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views import View
 from django.views.generic import CreateView, ListView, TemplateView, UpdateView
 
-from .forms import DepartmentForm, EmployeeForm, PositionForm
+from .forms import DepartmentForm, DepartmentPositionForm, EmployeeForm, PositionForm
 from .models import Department, Employee, Position
 
 
@@ -78,6 +79,23 @@ class EmployeeCreateView(LoginRequiredMixin, GroupRequiredMixin, CreateView):
     success_url = reverse_lazy('employees:list')
     allowed_groups = ['admin_rh']
 
+    def get(self, request, *args, **kwargs):
+        department_id = request.GET.get('department')
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' and department_id:
+            positions = Position.objects.filter(
+                active=True,
+                department_id=department_id,
+            ).order_by('name')
+            return JsonResponse(
+                {
+                    'positions': [
+                        {'value': position.pk, 'text': position.name}
+                        for position in positions
+                    ]
+                }
+            )
+        return super().get(request, *args, **kwargs)
+
     def form_valid(self, form):
         messages.success(self.request, 'Funcionario cadastrado com sucesso.')
         return super().form_valid(form)
@@ -89,6 +107,24 @@ class EmployeeUpdateView(LoginRequiredMixin, GroupRequiredMixin, UpdateView):
     template_name = 'employees/form.html'
     success_url = reverse_lazy('employees:list')
     allowed_groups = ['admin_rh']
+
+    def get(self, request, *args, **kwargs):
+        department_id = request.GET.get('department')
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' and department_id:
+            employee = self.get_object()
+            positions = Position.objects.filter(
+                Q(active=True) | Q(pk=employee.position_id),
+                department_id=department_id,
+            ).order_by('name')
+            return JsonResponse(
+                {
+                    'positions': [
+                        {'value': position.pk, 'text': position.name}
+                        for position in positions
+                    ]
+                }
+            )
+        return super().get(request, *args, **kwargs)
 
     def form_valid(self, form):
         messages.success(self.request, 'Funcionario atualizado com sucesso.')
@@ -147,17 +183,13 @@ class DepartmentListCreateView(LoginRequiredMixin, GroupRequiredMixin, View):
 
     def get(self, request):
         form = DepartmentForm()
-        position_form = PositionForm()
         departments = Department.objects.filter(active=True)
-        positions = Position.objects.filter(active=True).select_related('department').order_by('department__name', 'name')
         return render(
             request,
             self.template_name,
             {
                 'form': form,
                 'departments': departments,
-                'position_form': position_form,
-                'positions': positions,
             },
         )
 
@@ -168,16 +200,12 @@ class DepartmentListCreateView(LoginRequiredMixin, GroupRequiredMixin, View):
             messages.success(request, 'Departamento criado com sucesso.')
             return redirect('employees:departments')
         departments = Department.objects.filter(active=True)
-        position_form = PositionForm()
-        positions = Position.objects.filter(active=True).select_related('department').order_by('department__name', 'name')
         return render(
             request,
             self.template_name,
             {
                 'form': form,
                 'departments': departments,
-                'position_form': position_form,
-                'positions': positions,
             },
         )
 
@@ -197,17 +225,39 @@ class DepartmentDeactivateView(LoginRequiredMixin, GroupRequiredMixin, View):
         return redirect('employees:departments')
 
 
+class DepartmentDetailView(LoginRequiredMixin, GroupRequiredMixin, View):
+    allowed_groups = ['admin_rh']
+    template_name = 'employees/department_detail.html'
+
+    def get(self, request, pk):
+        department = get_object_or_404(Department, pk=pk)
+        positions = department.positions.filter(active=True).order_by('name')
+        form = DepartmentPositionForm(department=department)
+        return render(
+            request,
+            self.template_name,
+            {
+                'department': department,
+                'positions': positions,
+                'position_form': form,
+            },
+        )
+
+
 class PositionCreateView(LoginRequiredMixin, GroupRequiredMixin, View):
     allowed_groups = ['admin_rh']
 
-    def post(self, request):
-        form = PositionForm(request.POST)
+    def post(self, request, department_pk):
+        department = get_object_or_404(Department, pk=department_pk)
+        form = DepartmentPositionForm(request.POST, department=department)
         if form.is_valid():
             form.save()
             messages.success(request, 'Cargo criado com sucesso.')
         else:
-            messages.error(request, form.errors.as_text())
-        return redirect('employees:departments')
+            for field_errors in form.errors.values():
+                for error in field_errors:
+                    messages.error(request, error)
+        return redirect('employees:department-detail', pk=department.pk)
 
 
 class PositionDeactivateView(LoginRequiredMixin, GroupRequiredMixin, View):
@@ -217,12 +267,24 @@ class PositionDeactivateView(LoginRequiredMixin, GroupRequiredMixin, View):
         position = get_object_or_404(Position, pk=pk)
         if not position.active:
             messages.info(request, 'Cargo ja esta inativo.')
-            return redirect('employees:departments')
+            return redirect('employees:department-detail', pk=position.department_id)
 
         position.active = False
         position.save(update_fields=['active', 'updated_at'])
         messages.success(request, f'Cargo {position.name} foi inativado.')
-        return redirect('employees:departments')
+        return redirect('employees:department-detail', pk=position.department_id)
+
+
+class PositionBaseSalaryView(LoginRequiredMixin, View):
+    def get(self, request, pk):
+        position = get_object_or_404(Position, pk=pk, active=True)
+        return JsonResponse(
+            {
+                'id': position.pk,
+                'base_salary': float(position.base_salary),
+                'department_id': position.department_id,
+            }
+        )
 
 
 class EmployeeAnalyticsView(LoginRequiredMixin, GroupRequiredMixin, TemplateView):

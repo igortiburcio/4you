@@ -20,10 +20,11 @@ class DepartmentForm(forms.ModelForm):
 class PositionForm(forms.ModelForm):
     class Meta:
         model = Position
-        fields = ['department', 'name', 'active']
+        fields = ['department', 'name', 'base_salary', 'active']
         labels = {
             'department': 'Departamento',
             'name': 'Cargo',
+            'base_salary': 'Salario base',
             'active': 'Ativo',
         }
 
@@ -45,6 +46,42 @@ class PositionForm(forms.ModelForm):
             raise forms.ValidationError('Este cargo ja existe neste departamento.')
         cleaned_data['name'] = name
         return cleaned_data
+
+
+class DepartmentPositionForm(forms.ModelForm):
+    class Meta:
+        model = Position
+        fields = ['name', 'base_salary', 'active']
+        labels = {
+            'name': 'Cargo',
+            'base_salary': 'Salario base',
+            'active': 'Ativo',
+        }
+
+    def __init__(self, *args, department=None, **kwargs):
+        self.department = department
+        super().__init__(*args, **kwargs)
+
+    def clean_name(self):
+        name = (self.cleaned_data['name'] or '').strip()
+        if not self.department or not name:
+            return name
+        queryset = Position.objects.filter(
+            department=self.department,
+            name__iexact=name,
+        )
+        if self.instance.pk:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        if queryset.exists():
+            raise forms.ValidationError('Este cargo ja existe neste departamento.')
+        return name
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        obj.department = self.department
+        if commit:
+            obj.save()
+        return obj
 
 
 class EmployeeForm(forms.ModelForm):
@@ -75,11 +112,11 @@ class EmployeeForm(forms.ModelForm):
             'registration': 'Matricula',
             'name': 'Nome',
             'cpf': 'CPF',
+            'department': 'Departamento',
             'birth_date': 'Data de nascimento',
             'position': 'Cargo',
             'salary': 'Salario',
             'hire_date': 'Data de admissao',
-            'department': 'Departamento',
             'status': 'Status',
         }
 
@@ -88,7 +125,6 @@ class EmployeeForm(forms.ModelForm):
         self.fields['birth_date'].input_formats = ['%Y-%m-%d', '%d/%m/%Y']
         self.fields['hire_date'].input_formats = ['%Y-%m-%d', '%d/%m/%Y']
         active_departments = Department.objects.filter(active=True)
-        self.fields['position'].queryset = Position.objects.filter(active=True).select_related('department').order_by('name')
 
         selected_department_id = None
         if self.is_bound:
@@ -101,6 +137,8 @@ class EmployeeForm(forms.ModelForm):
                 Q(active=True) | Q(pk=getattr(self.instance, 'position_id', None)),
                 department_id=selected_department_id,
             ).select_related('department').order_by('name')
+        else:
+            self.fields['position'].queryset = Position.objects.none()
 
         if self.instance and self.instance.pk and self.instance.department_id:
             self.fields['department'].queryset = Department.objects.filter(
