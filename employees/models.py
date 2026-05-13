@@ -1,6 +1,7 @@
 from django.db import models
 from django.db.models import Q
 
+
 class Department(models.Model):
     name = models.CharField(max_length=120)
     description = models.TextField(blank=True)
@@ -15,6 +16,30 @@ class Department(models.Model):
         return self.name
 
 
+class Position(models.Model):
+    name = models.CharField(max_length=120)
+    department = models.ForeignKey(
+        Department,
+        on_delete=models.PROTECT,
+        related_name='positions',
+    )
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['department', 'name'],
+                name='unique_position_per_department',
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.name} - {self.department.name}'
+
+
 class Employee(models.Model):
     class Status(models.TextChoices):
         ACTIVE = 'active', 'Ativo'
@@ -23,8 +48,12 @@ class Employee(models.Model):
     registration = models.CharField(max_length=20, unique=True)
     name = models.CharField(max_length=180)
     cpf = models.CharField(max_length=14, unique=True)
-    age = models.PositiveSmallIntegerField()
-    position = models.CharField(max_length=120)
+    birth_date = models.DateField()
+    position = models.ForeignKey(
+        Position,
+        on_delete=models.PROTECT,
+        related_name='employees',
+    )
     salary = models.DecimalField(max_digits=10, decimal_places=2)
     hire_date = models.DateField()
     department = models.ForeignKey(
