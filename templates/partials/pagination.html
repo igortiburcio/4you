@@ -4,7 +4,7 @@
     <div class="flex gap-2">
       {% if page_obj.has_previous %}
         <a
-          class="px-3 py-1.5 bg-white border rounded hover:bg-slate-50"
+          class="px-3 py-1.5 bg-white border rounded-lg hover:bg-slate-50"
           href="?page={{ page_obj.previous_page_number }}&q={{ query }}&status={{ status_filter }}"
           hx-get="?page={{ page_obj.previous_page_number }}&q={{ query }}&status={{ status_filter }}"
           hx-target="#employee-table"
@@ -13,7 +13,7 @@
       {% endif %}
       {% if page_obj.has_next %}
         <a
-          class="px-3 py-1.5 bg-white border rounded hover:bg-slate-50"
+          class="px-3 py-1.5 bg-white border rounded-lg hover:bg-slate-50"
           href="?page={{ page_obj.next_page_number }}&q={{ query }}&status={{ status_filter }}"
           hx-get="?page={{ page_obj.next_page_number }}&q={{ query }}&status={{ status_filter }}"
           hx-target="#employee-table"

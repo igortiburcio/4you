@@ -5,14 +5,14 @@
 {% block content %}
   <div class="mb-6 flex items-center justify-between">
     <div>
-      <h1 class="text-3xl font-extrabold tracking-tight">{{ department.name }}</h1>
+      <h1 class="text-3xl font-bold">{{ department.name }}</h1>
       {% if department.description %}<p class="text-slate-600 mt-1">{{ department.description }}</p>{% endif %}
     </div>
-    <a href="{% url 'employees:departments' %}" class="bg-white border border-slate-300 px-4 py-2 rounded-xl">Voltar</a>
+    <a href="{% url 'employees:departments' %}" class="bg-white border border-slate-300 px-4 py-2 rounded-lg">Voltar</a>
   </div>
 
   <div class="grid lg:grid-cols-2 gap-6">
-    <section class="glass-card p-6">
+    <section class="surface-card-strong p-6">
       <h2 class="text-xl font-bold mb-4">Novo cargo</h2>
       <form method="post" action="{% url 'employees:position-create' department.pk %}" class="space-y-4">
         {% csrf_token %}
@@ -25,15 +25,15 @@
             {% endif %}
           </div>
         {% endfor %}
-        <button type="submit" class="bg-slate-900 text-white px-4 py-2 rounded-xl font-semibold shadow-sm hover:shadow-md">Salvar cargo</button>
+        <button type="submit" class="bg-slate-900 text-white px-4 py-2 rounded-lg font-semibold">Salvar cargo</button>
       </form>
     </section>
 
-    <section class="glass-card p-6">
+    <section class="surface-card-strong p-6">
       <h2 class="text-xl font-bold mb-4">Cargos do departamento</h2>
       <ul class="divide-y divide-slate-100">
         {% for position in positions %}
-          <li class="list-row">
+          <li class="list-row px-2">
             <div>
               <p class="font-semibold">{{ position.name }}</p>
               <p class="text-sm text-slate-600">Salario base: R$ {{ position.base_salary|floatformat:2 }}</p>
@@ -42,7 +42,7 @@
               {% csrf_token %}
               <button
                 type="submit"
-                class="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200 hover:bg-red-100"
+                class="text-xs px-3 py-1.5 rounded bg-red-50 text-red-700 border border-red-200 hover:bg-red-100"
               >Inativar</button>
             </form>
           </li>

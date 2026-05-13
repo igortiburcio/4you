@@ -1,4 +1,4 @@
-<div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+<div class="surface-card overflow-hidden">
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead class="bg-slate-50 text-slate-700">
@@ -14,7 +14,7 @@
       </thead>
       <tbody>
         {% for employee in employees %}
-          <tr class="border-t border-slate-100">
+          <tr class="border-t border-slate-100 hover:bg-slate-50/70 transition-colors">
             <td class="px-4 py-3">{{ employee.registration }}</td>
             <td class="px-4 py-3">{{ employee.name }}</td>
             <td class="px-4 py-3">{{ employee.position.name }}</td>

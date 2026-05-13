@@ -3,26 +3,48 @@
 {% block title %}Entrar | 4you RH{% endblock %}
 
 {% block content %}
-  <div class="max-w-md mx-auto bg-white rounded-xl shadow p-6 border border-slate-200">
-    <h1 class="text-2xl font-bold mb-1">Acesso ao sistema</h1>
-    <p class="text-slate-600 mb-6">Entre com seu usuario e senha.</p>
+  <div class="min-h-[70vh] grid lg:grid-cols-2 gap-8 items-center">
+    <section class="hidden lg:block pl-8">
+      <h1 class="text-5xl font-extrabold tracking-tight text-slate-900">4you RH</h1>
+      <p class="text-slate-600 mt-3 max-w-md">Gestao de pessoas com inteligencia e humanidade.</p>
 
-    <form method="post" class="space-y-4">
-      {% csrf_token %}
-      <div>
-        <label for="id_username" class="block text-sm font-semibold mb-1">Usuario</label>
-        <input id="id_username" name="username" type="text" required class="w-full rounded border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400">
+      <div class="mt-10 space-y-3 text-sm text-slate-600">
+        <p class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-slate-900"></span>Gestao centralizada de colaboradores</p>
+        <p class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-slate-500"></span>Fluxos de RH com controle e seguranca</p>
       </div>
-      <div>
-        <label for="id_password" class="block text-sm font-semibold mb-1">Senha</label>
-        <input id="id_password" name="password" type="password" required class="w-full rounded border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400">
-      </div>
+    </section>
 
-      {% if form.errors %}
-        <p class="text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">Credenciais invalidas.</p>
-      {% endif %}
+    <div class="surface-card p-8 max-w-md w-full mx-auto">
+      <h2 class="text-2xl font-bold mb-1">Acesso ao sistema</h2>
+      <p class="text-slate-600 mb-6">Entre com seu usuario e senha.</p>
 
-      <button type="submit" class="w-full bg-slate-900 text-white px-4 py-2.5 rounded font-semibold hover:bg-slate-800">Entrar</button>
-    </form>
+      <form method="post" class="space-y-4">
+        {% csrf_token %}
+        <div>
+          <label for="id_username" class="block text-sm font-semibold mb-1">Usuario</label>
+          <input id="id_username" name="username" type="text" required class="w-full rounded-lg border border-slate-300 px-3 py-2.5">
+        </div>
+        <div>
+          <label for="id_password" class="block text-sm font-semibold mb-1">Senha</label>
+          <input id="id_password" name="password" type="password" required class="w-full rounded-lg border border-slate-300 px-3 py-2.5">
+        </div>
+
+        <div class="flex items-center justify-between text-sm">
+          <label class="inline-flex items-center gap-2 text-slate-600">
+            <input type="checkbox" class="w-4 h-4 rounded border-slate-300">
+            Lembrar de mim
+          </label>
+          <a href="#" class="text-slate-700 hover:underline">Esqueci a senha</a>
+        </div>
+
+        {% if form.errors %}
+          <p class="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">Credenciais invalidas.</p>
+        {% endif %}
+
+        <button type="submit" class="w-full bg-slate-900 text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-slate-800">Entrar</button>
+      </form>
+
+      <p class="text-xs text-slate-500 mt-6">Novo na plataforma? Solicite acesso.</p>
+    </div>
   </div>
 {% endblock %}

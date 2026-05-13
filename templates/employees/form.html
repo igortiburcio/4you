@@ -3,7 +3,7 @@
 {% block title %}{% if object %}Editar funcionario{% else %}Novo funcionario{% endif %} | 4you RH{% endblock %}
 
 {% block content %}
-  <div class="max-w-4xl mx-auto glass-card p-6">
+  <div class="max-w-4xl mx-auto surface-card p-6">
     <h1 class="text-2xl font-bold mb-6">{% if object %}Editar funcionario{% else %}Novo funcionario{% endif %}</h1>
 
     {% if object and object.needs_profile_update %}

@@ -5,12 +5,12 @@
 {% block content %}
   <div class="mb-6">
     <h1 class="text-3xl font-extrabold tracking-tight">Departamentos</h1>
-    <p class="text-slate-600 mt-1">Organize os times e acesse os cargos vinculados de cada area.</p>
+    <p class="text-slate-600 mt-1">Gerencie as areas da empresa e acesse os cargos de cada departamento.</p>
   </div>
 
   <div class="grid lg:grid-cols-2 gap-6">
-    <section class="glass-card p-6">
-      <h2 class="text-xl font-bold mb-4">Novo departamento</h2>
+    <section class="surface-card-strong p-6">
+      <h1 class="text-2xl font-bold mb-4">Novo departamento</h1>
       <form method="post" class="space-y-4">
         {% csrf_token %}
         {% for field in form %}
@@ -22,15 +22,15 @@
             {% endif %}
           </div>
         {% endfor %}
-        <button type="submit" class="bg-slate-900 text-white px-4 py-2 rounded-xl font-semibold shadow-sm hover:shadow-md">Salvar departamento</button>
+        <button type="submit" class="bg-slate-900 text-white px-4 py-2 rounded-lg font-semibold">Salvar departamento</button>
       </form>
     </section>
 
-    <section class="glass-card p-6">
+    <section class="surface-card-strong p-6">
       <h2 class="text-xl font-bold mb-4">Lista de departamentos</h2>
       <ul class="divide-y divide-slate-100">
         {% for dep in departments %}
-          <li class="list-row">
+          <li class="list-row px-2">
             <div>
               <a class="font-semibold text-slate-900 hover:underline" href="{% url 'employees:department-detail' dep.pk %}">{{ dep.name }}</a>
               {% if dep.description %}<p class="text-sm text-slate-600">{{ dep.description }}</p>{% endif %}
@@ -42,7 +42,7 @@
                   {% csrf_token %}
                   <button
                     type="submit"
-                    class="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200 hover:bg-red-100"
+                    class="text-xs px-3 py-1.5 rounded bg-red-50 text-red-700 border border-red-200 hover:bg-red-100"
                   >Inativar</button>
                 </form>
               {% else %}

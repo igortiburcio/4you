@@ -4,26 +4,52 @@
 
 {% block content %}
   <div class="mb-8">
-    <h1 class="text-3xl font-bold">Painel de RH</h1>
-    <p class="text-slate-600 mt-1">Visao geral do sistema e estatisticas principais.</p>
+    <h1 class="text-3xl font-extrabold tracking-tight">Painel geral</h1>
+    <p class="text-slate-600 mt-1">Visao geral da empresa e metricas de desempenho humano.</p>
   </div>
 
-  <section class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-    <article class="bg-white rounded-xl shadow p-5 border border-slate-200">
+  <section class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <article class="surface-card p-5">
       <p class="text-sm text-slate-500">Total de funcionarios</p>
       <p class="text-3xl font-bold mt-2">{{ total_employees }}</p>
     </article>
-    <article class="bg-white rounded-xl shadow p-5 border border-slate-200">
+    <article class="surface-card p-5">
       <p class="text-sm text-slate-500">Ativos</p>
       <p class="text-3xl font-bold mt-2 text-emerald-700">{{ active_employees }}</p>
     </article>
-    <article class="bg-white rounded-xl shadow p-5 border border-slate-200">
+    <article class="surface-card p-5">
       <p class="text-sm text-slate-500">Desligados</p>
       <p class="text-3xl font-bold mt-2 text-amber-700">{{ terminated_employees }}</p>
     </article>
-    <article class="bg-white rounded-xl shadow p-5 border border-slate-200">
+    <article class="surface-card p-5">
       <p class="text-sm text-slate-500">Departamentos</p>
       <p class="text-3xl font-bold mt-2">{{ total_departments }}</p>
+    </article>
+  </section>
+
+  <section class="grid lg:grid-cols-3 gap-4">
+    <article class="surface-card p-6 lg:col-span-2">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold">Novas contratacoes</h2>
+        <a href="{% url 'employees:list' %}" class="text-sm text-slate-600 hover:underline">Ver todos</a>
+      </div>
+      <div class="space-y-3 text-sm">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <p class="font-medium">Alice Moreira</p><p class="text-slate-500">Produto</p><p class="text-emerald-700">Ativo</p>
+        </div>
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <p class="font-medium">Ricardo Borges</p><p class="text-slate-500">Tecnologia</p><p class="text-emerald-700">Ativo</p>
+        </div>
+        <div class="flex items-center justify-between">
+          <p class="font-medium">Carla Prado</p><p class="text-slate-500">RH</p><p class="text-amber-700">Pendente</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="surface-card p-6">
+      <h2 class="text-lg font-semibold">Meta de retencao</h2>
+      <p class="text-4xl font-extrabold mt-4">92%</p>
+      <p class="text-sm text-slate-600 mt-2">Sua meta de retencao esta acima do esperado para este trimestre.</p>
     </article>
   </section>
 {% endblock %}
