@@ -5,6 +5,7 @@ from django.db.models import Case, Count
 from django.db.models import CharField
 from django.db.models import Q
 from django.db.models import Value, When
+from django.db import transaction
 from django.http import JsonResponse
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
@@ -127,6 +128,22 @@ class EmployeeUpdateView(LoginRequiredMixin, GroupRequiredMixin, UpdateView):
         return super().get(request, *args, **kwargs)
 
     def form_valid(self, form):
+        transitional_department = Department.objects.filter(name='Transitorio').first()
+        transitional_position = None
+        if transitional_department:
+            transitional_position = Position.objects.filter(
+                department=transitional_department,
+                name='Cargo transitorio',
+            ).first()
+
+        employee = form.instance
+        if transitional_department and transitional_position:
+            if not (
+                employee.department_id == transitional_department.id
+                and employee.position_id == transitional_position.id
+            ):
+                employee.needs_profile_update = False
+
         messages.success(self.request, 'Funcionario atualizado com sucesso.')
         return super().form_valid(form)
 
@@ -219,9 +236,48 @@ class DepartmentDeactivateView(LoginRequiredMixin, GroupRequiredMixin, View):
             messages.info(request, 'Departamento ja esta inativo.')
             return redirect('employees:departments')
 
-        department.active = False
-        department.save(update_fields=['active', 'updated_at'])
-        messages.success(request, f'Departamento {department.name} foi inativado.')
+        with transaction.atomic():
+            transitional_department, _ = Department.objects.get_or_create(
+                name='Transitorio',
+                defaults={
+                    'description': 'Departamento temporario para colaboradores aguardando realocacao.',
+                    'active': True,
+                },
+            )
+            if not transitional_department.active:
+                transitional_department.active = True
+                transitional_department.save(update_fields=['active', 'updated_at'])
+
+            transitional_position, _ = Position.objects.get_or_create(
+                department=transitional_department,
+                name='Cargo transitorio',
+                defaults={
+                    'base_salary': 0,
+                    'active': True,
+                },
+            )
+            if not transitional_position.active:
+                transitional_position.active = True
+                transitional_position.save(update_fields=['active', 'updated_at'])
+
+            affected_employees = Employee.objects.filter(department=department)
+            affected_employees.update(
+                department=transitional_department,
+                position=transitional_position,
+                needs_profile_update=True,
+            )
+
+            Position.objects.filter(department=department, active=True).update(active=False)
+            department.active = False
+            department.save(update_fields=['active', 'updated_at'])
+
+        messages.success(
+            request,
+            (
+                f'Departamento {department.name} foi inativado. '
+                'Cargos vinculados foram inativados e colaboradores migrados para Cargo transitorio.'
+            ),
+        )
         return redirect('employees:departments')
 
 

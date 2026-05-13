@@ -71,6 +71,7 @@ class Employee(models.Model):
         choices=Status.choices,
         default=Status.ACTIVE,
     )
+    needs_profile_update = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

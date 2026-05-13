@@ -145,6 +145,75 @@ class EmployeeFlowsTests(TestCase):
         dep.refresh_from_db()
         self.assertTrue(dep.active)
 
+    def test_department_deactivation_migrates_employees_to_transitional(self):
+        self.client.login(username='admin', password='12345678')
+        dep = Department.objects.create(name='Operacoes', active=True)
+        pos = Position.objects.create(name='Operador', department=dep, base_salary=3000, active=True)
+        employee = Employee.objects.create(
+            registration='MAT777',
+            name='Paulo Operacao',
+            cpf='987.654.321-10',
+            birth_date=date(1994, 5, 3),
+            position=pos,
+            salary=3200,
+            hire_date=date(2024, 1, 10),
+            department=dep,
+            status=Employee.Status.ACTIVE,
+        )
+
+        response = self.client.post(reverse('employees:department-deactivate', args=[dep.pk]))
+        self.assertEqual(response.status_code, 302)
+
+        dep.refresh_from_db()
+        pos.refresh_from_db()
+        employee.refresh_from_db()
+
+        self.assertFalse(dep.active)
+        self.assertFalse(pos.active)
+        self.assertTrue(employee.needs_profile_update)
+
+        transitional_dep = Department.objects.get(name='Transitorio')
+        transitional_pos = Position.objects.get(
+            department=transitional_dep,
+            name='Cargo transitorio',
+        )
+        self.assertEqual(employee.department_id, transitional_dep.id)
+        self.assertEqual(employee.position_id, transitional_pos.id)
+
+    def test_employee_update_clears_profile_update_flag(self):
+        self.client.login(username='admin', password='12345678')
+        transitional_dep = Department.objects.create(name='Transitorio', active=True)
+        transitional_pos = Position.objects.create(
+            name='Cargo transitorio',
+            department=transitional_dep,
+            base_salary=0,
+            active=True,
+        )
+
+        self.employee.department = transitional_dep
+        self.employee.position = transitional_pos
+        self.employee.needs_profile_update = True
+        self.employee.save(update_fields=['department', 'position', 'needs_profile_update'])
+
+        response = self.client.post(
+            reverse('employees:edit', args=[self.employee.pk]),
+            {
+                'registration': self.employee.registration,
+                'name': self.employee.name,
+                'cpf': self.employee.cpf,
+                'birth_date': self.employee.birth_date.strftime('%Y-%m-%d'),
+                'position': self.position.pk,
+                'salary': '5000.00',
+                'hire_date': self.employee.hire_date.strftime('%Y-%m-%d'),
+                'department': self.department.pk,
+                'status': Employee.Status.ACTIVE,
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.employee.refresh_from_db()
+        self.assertFalse(self.employee.needs_profile_update)
+
     def test_create_form_shows_only_active_departments(self):
         Department.objects.create(name='Inativo', active=False)
         form = EmployeeForm()

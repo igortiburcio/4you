@@ -2,6 +2,7 @@ import re
 
 from django import forms
 from django.db.models import Q
+from django.utils import timezone
 
 from .models import Department, Employee, Position
 
@@ -175,9 +176,18 @@ class EmployeeForm(forms.ModelForm):
         cleaned_data = super().clean()
         department = cleaned_data.get('department')
         position = cleaned_data.get('position')
+        birth_date = cleaned_data.get('birth_date')
+        hire_date = cleaned_data.get('hire_date')
         if not department or not position:
             return cleaned_data
 
         if position.department_id != department.id:
             self.add_error('position', 'O cargo selecionado nao pertence ao departamento informado.')
+
+        if birth_date and birth_date > timezone.localdate():
+            self.add_error('birth_date', 'Data de nascimento nao pode estar no futuro.')
+
+        if hire_date and birth_date and hire_date < birth_date:
+            self.add_error('hire_date', 'Data de admissao nao pode ser anterior a data de nascimento.')
+
         return cleaned_data
